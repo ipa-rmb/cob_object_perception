@@ -415,7 +415,7 @@ void DetectText::detect_bormann()
 void DetectText::preprocess()
 {
 	if (processing_method_==ORIGINAL_EPSHTEIN)
-		maxStrokeWidth_ = maxStrokeWidthParameter; // * 640./(double)std::max(grayImage_.cols, grayImage_.rows);
+		maxStrokeWidth_ = maxStrokeWidthParameter * 640./(double)std::max(grayImage_.cols, grayImage_.rows);
 	else
 		maxStrokeWidth_ = round((std::max(grayImage_.cols, grayImage_.rows)) / (float) maxStrokeWidthParameter);
 	initialStrokeWidth_ = maxStrokeWidth_ * 2;
@@ -829,8 +829,8 @@ void DetectText::updateStrokeWidth(cv::Mat& swtmap, std::vector<cv::Point>& star
 							isStroke = true;
 	//						if (purpose == UPDATE)
 	//							strokePoints.push_back(cv::Point(ix, iy));
-							break;
 						}
+							break;
 					}
 				}
 				if (foundEdgePoint == true)
@@ -1007,9 +1007,9 @@ int DetectText::connectComponentAnalysis(const cv::Mat& swtmap, cv::Mat& ccmap)
 							}
 
 							// do the pixels have similar strokewidth?
-							if (std::max(sw1, sw2) <= swCompareParameter * std::min(sw1, sw2)) // ||		// todo: ratio between a mean value over the component and sw1 better?
-								//	(std::max(sw1, sw2) <= 1.5*swCompareParameter * std::min(sw1, sw2) && (fabs(componentMeanIntensity-intensity) < colorCompareParameter) && (fabs(componentMeanColor.x-color.x) < colorCompareParameter) &&
-								//	(fabs(componentMeanColor.y-color.y) < colorCompareParameter) && (fabs(componentMeanColor.z-color.z) < colorCompareParameter)))
+							if (std::max(sw1, sw2) <= swCompareParameter * std::min(sw1, sw2) ||		// todo: ratio between a mean value over the component and sw1 better?
+								(std::max(sw1, sw2) <= 1.5*swCompareParameter * std::min(sw1, sw2) && (fabs(componentMeanIntensity-intensity) < colorCompareParameter) && (fabs(componentMeanColor.x-color.x) < colorCompareParameter) &&
+								(fabs(componentMeanColor.y-color.y) < colorCompareParameter) && (fabs(componentMeanColor.z-color.z) < colorCompareParameter)))
 							{
 //								if (processing_method_ == ORIGINAL_EPSHTEIN)
 //								{
