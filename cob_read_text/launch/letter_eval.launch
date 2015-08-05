@@ -1,0 +1,14 @@
+<launch>
+
+	<!--arg name="xmlfile" default="$(find cob_read_text_data)/sample_train.xml"/-->
+
+	<env name="TESSDATA_PREFIX" value="$(find cob_tesseract_data)/" />
+
+	<rosparam command="load" file="$(find cob_read_text)/launch/params.yaml" />
+
+	<node name="letter_evaluation" pkg="cob_read_text" type="letter_evaluation" output="screen" args="$(find cob_read_text)/common/files/competitions/2003/03-Character-Recognition/TrialTrain/char.xml">
+	</node>
+</launch>
+
+
+
