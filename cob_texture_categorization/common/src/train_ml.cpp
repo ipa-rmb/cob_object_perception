@@ -345,14 +345,15 @@ void train_ml::cross_validation_with_generated_attributes(int folds, const std::
 //					for (unsigned int s=0; s<generated_attributes_data_sample_hierarchy[class_index][object_index].size(); ++s)
 //						train_indices_generated_attributes.push_back(generated_attributes_data_sample_hierarchy[class_index][object_index][s]);
 			}
-			else
-			{
-				// use computed attributes for remaining classes as training data
-				int object_number = data_sample_hierarchy[class_index].size();
-				for (int object_index=0; object_index<object_number; ++object_index)
-					for (unsigned int s=0; s<data_sample_hierarchy[class_index][object_index].size(); ++s)
-						train_indices.push_back(data_sample_hierarchy[class_index][object_index][s]);
-			}
+			// hack: do not use computed attributes for known classes, just use generated labels for training
+//			else
+//			{
+//				// use computed attributes for remaining classes as training data
+//				int object_number = data_sample_hierarchy[class_index].size();
+//				for (int object_index=0; object_index<object_number; ++object_index)
+//					for (unsigned int s=0; s<data_sample_hierarchy[class_index][object_index].size(); ++s)
+//						train_indices.push_back(data_sample_hierarchy[class_index][object_index][s]);
+//			}
 			// take the generated attributes (e.g. from verbal description) as additional training input to the classifier
 			int object_number = generated_attributes_data_sample_hierarchy[class_index].size();
 			for (int object_index=0; object_index<object_number; ++object_index)
@@ -365,19 +366,19 @@ void train_ml::cross_validation_with_generated_attributes(int folds, const std::
 		cv::Mat training_labels(train_indices.size()+train_indices_generated_attributes.size(), 1, class_label_matrix.type());
 		cv::Mat test_data(test_indices.size(), computed_attribute_matrix.cols, computed_attribute_matrix.type());
 		cv::Mat test_labels(test_indices.size(), 1, class_label_matrix.type());
-		std::cout << "training class " << (fold+1)%number_classes << " (" << texture_classes[(fold+1)%number_classes] << "):" << std::endl;
+//		std::cout << "training class " << (fold+1)%number_classes << " (" << texture_classes[(fold+1)%number_classes] << "):" << std::endl;
 		for (unsigned int r=0; r<train_indices.size(); ++r)
 		{
 			for (int c=0; c<computed_attribute_matrix.cols; ++c)
 				training_data.at<float>(r,c) = computed_attribute_matrix.at<float>(train_indices[r],c);
 			training_labels.at<float>(r) = class_label_matrix.at<float>(train_indices[r]);
 
-			if (class_label_matrix.at<float>(train_indices[r]) == (fold+1)%number_classes)	// attribute prediction for next class
-			{
-				for (int c=0; c<computed_attribute_matrix.cols; ++c)
-					std::cout << computed_attribute_matrix.at<float>(train_indices[r],c) << "\t";
-				std::cout << std::endl;
-			}
+//			if (class_label_matrix.at<float>(train_indices[r]) == (fold+1)%number_classes)	// attribute prediction for next class
+//			{
+//				for (int c=0; c<computed_attribute_matrix.cols; ++c)
+//					std::cout << computed_attribute_matrix.at<float>(train_indices[r],c) << "\t";
+//				std::cout << std::endl;
+//			}
 		}
 		for (unsigned int r=0; r<train_indices_generated_attributes.size(); ++r)
 		{
@@ -385,19 +386,19 @@ void train_ml::cross_validation_with_generated_attributes(int folds, const std::
 				training_data.at<float>(train_indices.size()+r,c) = generated_attributes_matrix.at<float>(train_indices_generated_attributes[r],c);
 			training_labels.at<float>(train_indices.size()+r) = generated_attributes_class_label_matrix.at<float>(train_indices_generated_attributes[r]);
 		}
-		std::cout << "test class " << fold << " (" << texture_classes[fold] << "):" << std::endl;
+//		std::cout << "test class " << fold << " (" << texture_classes[fold] << "):" << std::endl;
 		for (unsigned int r=0; r<test_indices.size(); ++r)
 		{
 			for (int c=0; c<computed_attribute_matrix.cols; ++c)
 				test_data.at<float>(r,c) = computed_attribute_matrix.at<float>(test_indices[r],c);
 			test_labels.at<float>(r) = class_label_matrix.at<float>(test_indices[r]);
 
-			if (class_label_matrix.at<float>(test_indices[r]) == fold)
-			{
-				for (int c=0; c<computed_attribute_matrix.cols; ++c)
-					std::cout << computed_attribute_matrix.at<float>(test_indices[r],c) << "\t";
-				std::cout << std::endl;
-			}
+//			if (class_label_matrix.at<float>(test_indices[r]) == fold)
+//			{
+//				for (int c=0; c<computed_attribute_matrix.cols; ++c)
+//					std::cout << computed_attribute_matrix.at<float>(test_indices[r],c) << "\t";
+//				std::cout << std::endl;
+//			}
 		}
 
 		AttributeLearning al;
@@ -555,6 +556,9 @@ void train_ml::cross_validation_with_generated_attributes(int folds, const std::
 		double percentage = t*(100.0 / sum);
 		std::cout << "true: " << t << "\tfalse: " << f << "\tcorrectly classified: " << percentage << "%" << std::endl;
 		screen_output << "true: " << t << "\tfalse: " << f << "\tcorrectly classified: " << percentage << "%" << std::endl;
+
+		//hack
+		cv::waitKey(5000);
 	}
 
 	std::cout << "=== Total result over " << folds << "-fold cross validation ===" << std::endl;
@@ -818,7 +822,7 @@ void train_ml::load_computed_attribute_matrices(std::string path, std::vector<cv
 		std::cout << "Error: could not open file '" << path_data << "' for reading."<< std::endl;
 	fs.release();
 
-	std::cout << "done." << std::endl;
+	std::cout << "done. Loaded a " << computed_attribute_matrices.size() << "-fold cross-validation dataset." << std::endl;
 }
 
 

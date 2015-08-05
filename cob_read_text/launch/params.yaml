@@ -190,6 +190,9 @@ showCriterions: true
 
 # debug
 # ----------
+# turns all debug outputs off
+# bool
+debugAllOff: true
 
 # show gray colored edgemap image
 # bool

@@ -168,7 +168,7 @@ void AttributeLearning::loadAttributeCrossValidationData(std::string path, std::
 			preselected_train_indices[i][j] = preselected_train_indices_mat[i].at<int>(j,0);
 	}
 
-	std::cout << "done." << std::endl;
+	std::cout << "done. Loaded a " << computed_attribute_matrices.size() << "-fold cross-validation dataset." << std::endl;
 }
 
 

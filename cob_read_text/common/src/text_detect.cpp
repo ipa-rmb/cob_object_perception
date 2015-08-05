@@ -220,6 +220,7 @@ void DetectText::detect()
 	finalBoundingBoxes_.clear();
 	finalRotatedBoundingBoxes_.clear();
 	finalBoundingBoxesQualityScore_.clear();
+	finalTextRegions_.clear();
 
 	// start timer
 	double start_time;
@@ -467,6 +468,7 @@ void DetectText::detect()
 //	}
 
 	// write found bounding boxes into the respective structures
+	finalBoundingBoxes_.clear();
 	for (unsigned int i=0; i<finalTextRegions_.size(); i++)
 	{
 		// compute coordinates on original image size
@@ -520,6 +522,9 @@ void DetectText::detect()
 	std::cout << std::endl << "Found " << transformedImage_.size() << " boundingBoxes for OCR." << std::endl << std::endl;
 
 	// OCR
+	textImages_.clear();
+	finalBoxes_.clear();	// hack: might destroy some kinds of results
+	finalTexts_.clear();
 	if (enableOCR_ == true)
 	{
 		// ocrPreprocess(transformedBoundingBoxes_);
@@ -4779,13 +4784,19 @@ float DetectText::ocrRead(const cv::Mat& image, std::string& output)
 	std::string str;
 
 	int loopCount = 0;
+	bool use_spellchecker = false;
 	while (fin >> str)
 	{
 		std::cout << str << " ";
 		std::string tempOutput;
-		score += spellCheck(str, tempOutput, 2);
-		std::cout << " -->  \"" << tempOutput.substr(0, tempOutput.length() - 1) << "\" , score: " << score << std::endl;
-		output += tempOutput;
+		if (use_spellchecker == true)
+		{
+			score += spellCheck(str, tempOutput, 2);
+			std::cout << " -->  \"" << tempOutput.substr(0, tempOutput.length() - 1) << "\" , score: " << score << std::endl;
+			output += tempOutput;
+		}
+		else
+			output += str;
 		loopCount++;
 	}
 
@@ -5184,15 +5195,14 @@ void DetectText::showBoundingBoxes(std::vector<cv::RotatedRect>& boundingBoxes, 
 {
 	for (size_t i = 0; i < boundingBoxes.size(); i++)
 	{
-		cv::Scalar scalar((25 * i + 100) % 255, (35 * (i + 1) + 100) % 255, (45 * (i + 2) + 100) % 255);
-		cv::RotatedRect *rect = &boundingBoxes[i];
-		cv::Point2f vertices[4];
-		rect->points(vertices);
-		for (int i = 0; i < 4; i++)
-			cv::line(resultImage_, vertices[i], vertices[(i + 1) % 4], scalar);
-		//    cv::rectangle(resultImage_, cv::Point(rect->x, rect->y), cv::Point(rect->x + rect->width, rect->y + rect->height),
-		//                  scalar, 1);
-
+		//cv::Scalar scalar((25 * i + 100) % 255, (35 * (i + 1) + 100) % 255, (45 * (i + 2) + 100) % 255);
+		cv::Scalar scalar(0, 255, 0);
+		cv::RotatedRect& rect = boundingBoxes[i];
+//		cv::Point2f vertices[4];
+//		rect.points(vertices);
+//		for (int i = 0; i < 4; i++)
+//			cv::line(resultImage_, vertices[i], vertices[(i + 1) % 4], scalar);
+		cv::rectangle(resultImage_, cv::Point(rect.center.x-rect.size.width/2, rect.center.y-rect.size.height/2), cv::Point(rect.center.x+rect.size.width/2, rect.center.y+rect.size.height/2), scalar, 1);
 	}
 	overlayText(boundingBoxes, text);
 }
@@ -5206,7 +5216,8 @@ void DetectText::overlayText(std::vector<cv::RotatedRect>& box, std::vector<std:
 	int count = 0;
 	for (size_t i = 0; i < box.size(); i++)
 	{
-		cv::Scalar color((25 * i + 100) % 255, (35 * (i + 1) + 100) % 255, (45 * (i + 2) + 100) % 255);
+		//cv::Scalar color((25 * i + 100) % 255, (35 * (i + 1) + 100) % 255, (45 * (i + 2) + 100) % 255);
+		cv::Scalar color(0, 255, 0);
 		if (count > 9)
 			indent = 70;
 		std::string output = text[i];
@@ -5219,17 +5230,19 @@ void DetectText::overlayText(std::vector<cv::RotatedRect>& box, std::vector<std:
 		count++;
 		std::string prefix = "[";
 		prefix = prefix + out.str() + "]";
-		cv::putText(resultImage_, prefix, cv::Point(box[i].center.x + 0.5 * box[i].size.width, box[i].center.y - 0.5 * box[i].size.height),
-				cv::FONT_HERSHEY_DUPLEX, 1, color, 1);
-		cv::putText(resultImage_, prefix, cv::Point(grayImage_.cols, textDisplayOffset * 35), cv::FONT_HERSHEY_DUPLEX, 1, color, 1);
+		if (false)
+			cv::putText(resultImage_, prefix, cv::Point(box[i].center.x + 0.5 * box[i].size.width, box[i].center.y - 0.5 * box[i].size.height), cv::FONT_HERSHEY_DUPLEX, 1, color, 1);
+		else
+			cv::putText(resultImage_, output, cv::Point(box[i].center.x-box[i].size.width/2, box[i].center.y-box[i].size.height/2), cv::FONT_HERSHEY_DUPLEX, 0.75, color, 1);
+		cv::putText(resultImage_, prefix, cv::Point(originalImage_.cols, textDisplayOffset * 35), cv::FONT_HERSHEY_DUPLEX, 1, color, 1);
 		while (output.length() > lineWidth)
 		{
-			cv::putText(resultImage_, output.substr(0, lineWidth), cv::Point(grayImage_.cols + indent, textDisplayOffset * 35), cv::FONT_HERSHEY_DUPLEX, 1,
+			cv::putText(resultImage_, output.substr(0, lineWidth), cv::Point(originalImage_.cols + indent, textDisplayOffset * 35), cv::FONT_HERSHEY_DUPLEX, 1,
 					color, 1);
 			output = output.substr(lineWidth);
 			textDisplayOffset++;
 		}
-		cv::putText(resultImage_, output, cv::Point(grayImage_.cols + indent, textDisplayOffset * 35), cv::FONT_HERSHEY_DUPLEX, 1, color, 1);
+		cv::putText(resultImage_, output, cv::Point(originalImage_.cols + indent, textDisplayOffset * 35), cv::FONT_HERSHEY_DUPLEX, 1, color, 1);
 		textDisplayOffset += 2;
 	}
 }
